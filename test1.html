@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Listes des films Star Wars</title>
+</head>
+<body>
+    <h1>Films Star Wars</h1>
+    <div id="Films-List"></div>
+    <div id="film-details" style="margin-top: 20px; display: none;">
+        <h2 id="film-title"></h2>
+        <p>Date de sortie : <span id="release-date"></span></p>
+        <p>Réalisateur : <span id="director"></span></p>
+        <h3>Acteurs :</h3>
+        <ul id="actors"></ul>
+        <button id="close-button" style="display: none;">Fermer</button>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const filmList = document.getElementById("Films-List");
+            const filmDetails = document.getElementById("film-details");
+            const closeButton = document.getElementById("close-button");
+
+            // Fonction pour récupérer les détails des films à partir de l'API SWAPI
+            function getFilmDetails(filmUrl) {
+                fetch(filmUrl)
+                    .then((response) => response.json())
+                    .then((filmData) => {
+                        document.getElementById("film-title").textContent = filmData.title;
+                        document.getElementById("release-date").textContent = filmData.release_date;
+                        document.getElementById("director").textContent = filmData.director;
+                        // Récupération des noms des acteurs
+                        const actorsList = filmData.characters.map((actorUrl) => {
+                            return fetch(actorUrl)
+                                .then((response) => response.json())
+                                .then((actorData) => actorData.name);
+                        });
+                        Promise.all(actorsList)
+                            .then((actors) => {
+                                const actorsUl = document.getElementById("actors");
+                                actorsUl.innerHTML = "";
+                                actors.forEach((actor) => {
+                                    const actorLi = document.createElement("li");
+                                    actorLi.textContent = actor;
+                                    actorsUl.appendChild(actorLi);
+                                });
+                                // Afficher les détails des films
+                                filmDetails.style.display = "block";
+                                closeButton.style.display = "block";
+                            })
+                            .catch((err) => console.error("Erreur lors de la récupération des détails des acteurs :", err));
+                    })
+                    .catch((err) => console.error("Erreur lors de la récupération des détails du film :", err));
+            }
+
+            // Fonction pour ajouter les boutons des films à la liste
+            function addFilmToButton(title, url) {
+                const filmButton = document.createElement("button");
+                filmButton.textContent = title;
+                filmButton.dataset.url = url;
+                filmButton.addEventListener("click", () => {
+                    getFilmDetails(url);
+                });
+                filmList.appendChild(filmButton);
+            }
+
+            // Bouton pour fermer les détails des films
+            closeButton.addEventListener("click", () => {
+                filmDetails.style.display = "none";
+                closeButton.style.display = "none";
+            });
+
+            // Récupération de la liste des films Star Wars
+            fetch("https://swapi.dev/api/films/")
+                .then((response) => response.json())
+                .then((filmsData) => {
+                    filmsData.results.forEach((film) => {
+                        addFilmToButton(film.title, film.url);
+                    });
+                })
+                .catch((err) => console.error("Erreur lors de la récupération de la liste des films Star Wars :", err));
+        });
+    </script>
+</body>
+</html>
